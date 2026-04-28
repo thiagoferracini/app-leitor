@@ -2,51 +2,277 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor de QR Code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Abastece Fácil - Frentista</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; padding: 20px; }
-        #reader { width: 100%; max-width: 500px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #result { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; width: 100%; max-width: 500px; text-align: center; word-wrap: break-word; }
-        .btn { padding: 10px 20px; background: #007aff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        /* --- Reset e Fontes do Sistema (Estilo Apple) --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F2F2F7; /* Cinza claro do sistema iOS */
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Evita rolagem da página inteira */
+        }
+
+        /* --- Barra de Navegação Superior --- */
+        .header {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px); /* Efeito de vidro jateado */
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 1px solid #C6C6C8;
+            padding-top: calc(15px + env(safe-area-inset-top)); /* Espaço para o "notch" */
+        }
+        .header h1 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .header p {
+            font-size: 13px;
+            color: #636366;
+        }
+
+        /* --- Área da Câmera (Central) --- */
+        #scanner-container {
+            flex: 1; /* Ocupa o espaço restante */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            position: relative;
+        }
+        #reader {
+            width: 100%;
+            height: 100%;
+        }
+        /* Customizando a sobreposição da biblioteca para parecer com a imagem */
+        #reader__scan_region {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+        }
+        #reader__scan_region video {
+            object-fit: cover;
+        }
+        #reader__overlay {
+            border: 2px solid white !important;
+            border-radius: 12px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5); /* Escurece o resto */
+        }
+
+        /* --- Painel de Controles e Resultado (Inferior) --- */
+        .controls {
+            background-color: #fff;
+            padding: 20px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* Espaço para barra inferior */
+        }
+
+        /* Botões Estilo Apple (Grandes e Tapáveis) */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent; /* Remove piscar azul ao tocar */
+        }
+        .btn:active { transform: scale(0.98); opacity: 0.9; } /* Feedback de toque */
+
+        /* Botão Verde */
+        .btn-success { background-color: #34C759; color: white; }
+        /* Botão Azul */
+        .btn-primary { background-color: #007AFF; color: white; }
+
+        /* --- Área de Resultado --- */
+        #result-panel {
+            background-color: #F2F2F7;
+            padding: 15px;
+            border-radius: 12px;
+            min-height: 80px;
+        }
+        .result-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #636366;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        #scanned-result {
+            font-size: 15px;
+            line-height: 1.4;
+            color: #1C1C1E;
+            word-wrap: break-word;
+        }
+        .success-text { color: #248A3D; font-weight: 500; }
+        .error-text { color: #FF3B30; }
+
+        /* Ícones Simplificados (representações) */
+        .icon { font-size: 1.2em; }
     </style>
 </head>
 <body>
 
-    <h2>Escaneador de QR Code</h2>
-    
-    <div id="reader"></div>
-    
-    <div id="result">
-        <p><strong>Resultado:</strong></p>
-        <div id="scanned-result">Aguardando leitura...</div>
-    </div>
+    <header class="header">
+        <h1>Abastece Fácil - Frentista</h1>
+        <p>Scanner de Abastecimento</p>
+    </header>
+
+    <main id="scanner-container">
+        <div id="reader"></div>
+    </main>
+
+    <footer class="controls">
+        <div class="button-group">
+            <button id="start-stop-btn" class="btn btn-success" onclick="toggleScanner()">
+                <span class="icon">📷</span>
+                <span id="btn-text">INICIAR LEITURA</span>
+            </button>
+            <button id="switch-camera-btn" class="btn btn-primary" onclick="switchCamera()" disabled>
+                <span class="icon">🔄</span>
+                <span>TROCAR CÂMERA</span>
+            </button>
+        </div>
+
+        <div id="result-panel">
+            <div class="result-header">Resultado da Leitura</div>
+            <div id="scanned-result">Toque em 'Iniciar Leitura' para ativar a câmera...</div>
+        </div>
+    </footer>
 
     <script>
+        let html5QrCode;
+        let isScanning = false;
+        let currentCameraId;
+        let cameras = [];
+
+        // Inicializa a instância do scanner
+        html5QrCode = new Html5Qrcode("reader");
+
+        // Função sucesso ao ler QR Code
         function onScanSuccess(decodedText, decodedResult) {
-            // Exibe o resultado na tela
-            document.getElementById('scanned-result').innerHTML = `
-                <p style="color: green;">Leitura concluída!</p>
-                <a href="${decodedText}" target="_blank">${decodedText}</a>
+            // Feedback tátil (vibration) se suportado
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            // Formata o resultado na tela (igual à imagem de exemplo)
+            const resultElement = document.getElementById('scanned-result');
+            resultElement.innerHTML = `
+                <p class="success-text">✅ Leitura concluída!</p>
+                <p style="margin-top: 5px; font-weight: 600;">Dados Lidos:</p>
+                <a href="${decodedText}" target="_blank" style="color: #007AFF; word-break: break-all;">${decodedText}</a>
+                <p style="margin-top: 5px; font-size: 13px; color: #636366;">(Aguardando confirmação para iniciar...)</p>
             `;
-            
-            // Opcional: Vibração no celular ao ler
-            if (navigator.vibrate) navigator.vibrate(200);
-            
-            // Se quiser parar a câmera após ler:
-            // html5QrcodeScanner.clear();
+
+            // Opcional: Parar após a primeira leitura bem sucedida
+            stopScanner();
         }
 
-        function onScanFailure(error) {
-            // Erros de foco ou ausência de QR code na imagem são ignorados aqui
+        // Função de erro de leitura (normalmente ignorada)
+        function onScanFailure(error) { /* Ignorar erros de foco */ }
+
+        // Ativa/Desativa o Scanner
+        function toggleScanner() {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: {width: 250, height: 250} }
-        );
-        
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        async function startScanner() {
+            try {
+                // Solicita permissões e lista câmeras
+                cameras = await Html5Qrcode.getCameras();
+                
+                if (cameras && cameras.length > 0) {
+                    // Seleciona a última câmera (normalmente a traseira em celulares)
+                    currentCameraId = cameras[cameras.length - 1].id;
+                    
+                    // Configuração da câmera (fps, tamanho da região de corte)
+                    const config = { 
+                        fps: 15, 
+                        qrbox: { width: 220, height: 220 },
+                        aspectRatio: 1.0 // Quadrado
+                    };
+
+                    await html5QrCode.start(currentCameraId, config, onScanSuccess, onScanFailure);
+                    
+                    isScanning = true;
+                    updateUI();
+
+                    // Habilita botão de troca se houver mais de uma câmera
+                    if (cameras.length > 1) {
+                        document.getElementById('switch-camera-btn').disabled = false;
+                    }
+                } else {
+                    alert("Nenhuma câmera encontrada no dispositivo.");
+                }
+            } catch (err) {
+                console.error("Erro ao iniciar câmera:", err);
+                alert("Erro ao acessar câmera. Verifique se deu permissão HTTPS.");
+                document.getElementById('scanned-result').innerHTML = '<span class="error-text">Erro de Permissão.</span>';
+            }
+        }
+
+        async function stopScanner() {
+            if (!isScanning) return;
+            await html5QrCode.stop();
+            isScanning = false;
+            updateUI();
+        }
+
+        // Troca entre câmeras disponíveis (frontal/traseira)
+        async function switchCamera() {
+            if (!isScanning || cameras.length <= 1) return;
+
+            await html5QrCode.stop();
+            
+            // Acha o índice da câmera atual e pega a próxima
+            const currentIndex = cameras.findIndex(cam => cam.id === currentCameraId);
+            const nextIndex = (currentIndex + 1) % cameras.length;
+            currentCameraId = cameras[nextIndex].id;
+
+            // Reinicia com a nova câmera
+            const config = { fps: 15, qrbox: { width: 220, height: 220 } };
+            await html5QrCode.start(currentCameraId, config, onScanSuccess, onScanFailure);
+        }
+
+        // Atualiza a aparência dos botões e textos
+        function updateUI() {
+            const btn = document.getElementById('start-stop-btn');
+            const btnText = document.getElementById('btn-text');
+            const resultElement = document.getElementById('scanned-result');
+
+            if (isScanning) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary'); // Muda para azul ao escanear
+                btnText.innerText = "PARAR CÂMERA";
+                resultElement.innerText = "Posicione o QR Code dentro do quadrado branco...";
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success'); // Volta para verde
+                btnText.innerText = "INICIAR LEITURA";
+                // Não limpa o último resultado lido, para referência do frentista
+            }
+        }
     </script>
 </body>
 </html>
