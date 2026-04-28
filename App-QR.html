@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de QR Code</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; padding: 20px; }
+        #reader { width: 100%; max-width: 500px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #result { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; width: 100%; max-width: 500px; text-align: center; word-wrap: break-word; }
+        .btn { padding: 10px 20px; background: #007aff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Escaneador de QR Code</h2>
+    
+    <div id="reader"></div>
+    
+    <div id="result">
+        <p><strong>Resultado:</strong></p>
+        <div id="scanned-result">Aguardando leitura...</div>
+    </div>
+
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            // Exibe o resultado na tela
+            document.getElementById('scanned-result').innerHTML = `
+                <p style="color: green;">Leitura concluída!</p>
+                <a href="${decodedText}" target="_blank">${decodedText}</a>
+            `;
+            
+            // Opcional: Vibração no celular ao ler
+            if (navigator.vibrate) navigator.vibrate(200);
+            
+            // Se quiser parar a câmera após ler:
+            // html5QrcodeScanner.clear();
+        }
+
+        function onScanFailure(error) {
+            // Erros de foco ou ausência de QR code na imagem são ignorados aqui
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: {width: 250, height: 250} }
+        );
+        
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
