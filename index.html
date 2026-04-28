@@ -3,108 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Abastece Fácil - Frentista</title>
+    <title>Identificação Veloe - Ailog</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #000;
-            color: #fff;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #000; color: #fff; height: 100vh; overflow: hidden; 
         }
+        
+        /* Área da Câmera */
+        #reader { width: 100%; height: 100%; }
 
-        /* Área do Scanner */
-        #reader {
-            flex: 1;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Overlay de Controles Inferiores */
+        /* Controles Inferiores Estilo iOS */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(28, 28, 30, 0.9);
-            backdrop-filter: blur(20px);
+            position: fixed; bottom: 0; width: 100%;
+            background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(20px);
             padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-            border-top: 1px solid #38383A;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            z-index: 100;
+            border-top: 1px solid #38383A; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; z-index: 100;
         }
 
-        .btn {
-            border: none;
-            border-radius: 14px;
-            padding: 18px;
-            font-size: 16px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn-green { background-color: #30D158; }
-        .btn-blue { background-color: #0A84FF; }
-        .btn-red { background-color: #FF453A; }
+        .btn { border: none; border-radius: 14px; padding: 18px; font-size: 16px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-green { background: #30D158; }
+        .btn-red { background: #FF453A; }
+        .btn-blue { background: #0A84FF; }
+        .btn:disabled { background: #3A3A3C; color: #8E8E93; }
 
-        /* --- ESTILO DO POP-UP (MODAL) --- */
+        /* MODAL DE IDENTIFICAÇÃO (POP-UP) */
         #modal-overlay {
-            display: none; /* Escondido por padrão */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
         }
 
         .modal-content {
-            background: #fff;
-            color: #000;
-            width: 100%;
-            max-width: 320px;
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #fff; color: #000; width: 100%; max-width: 340px;
+            border-radius: 24px; padding: 24px; text-align: center;
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .modal-title { font-weight: 700; font-size: 18px; margin-bottom: 10px; }
-        .modal-data { 
-            background: #F2F2F7; 
-            padding: 15px; 
-            border-radius: 10px; 
-            font-size: 14px; 
-            margin-bottom: 20px; 
-            word-break: break-all;
-            max-height: 200px;
-            overflow-y: auto;
-            text-align: left;
-        }
+        .client-info { background: #F2F2F7; padding: 15px; border-radius: 15px; text-align: left; margin: 15px 0; border: 1px solid #D1D1D6; }
+        .label { font-size: 10px; color: #8E8E93; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; display: block; }
+        .value { font-size: 15px; font-weight: 600; color: #1C1C1E; margin-bottom: 12px; display: block; word-break: break-all; }
 
-        .btn-close {
-            width: 100%;
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-        }
+        .btn-confirm { width: 100%; background: #007AFF; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 16px; }
+        
+        /* Loading Spinner */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #007AFF; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -112,61 +60,95 @@
     <div id="reader"></div>
 
     <div class="bottom-nav">
-        <button id="main-btn" class="btn btn-green" onclick="toggleScanner()">INICIAR</button>
+        <button id="main-btn" class="btn btn-green" onclick="toggleScanner()">INICIAR CÂMERA</button>
         <button id="switch-btn" class="btn btn-blue" onclick="switchCamera()" disabled>TROCAR</button>
     </div>
 
     <div id="modal-overlay">
         <div class="modal-content">
-            <div class="modal-title">Dados Lidos</div>
-            <div class="modal-data" id="modal-text">Nenhuma informação.</div>
-            <button class="btn-close" onclick="closeModal()">OK / PRÓXIMO</button>
+            <h2 id="modal-title" style="font-size: 18px; margin-bottom: 5px;">Buscando Veículo...</h2>
+            
+            <div id="loading-area" style="padding: 20px;">
+                <div class="loader"></div><span>Consultando base Veloe...</span>
+            </div>
+
+            <div id="data-area" class="client-info" style="display: none;">
+                <span class="label">Empresa / Cliente</span>
+                <span class="value" id="res-cliente">---</span>
+
+                <span class="label">CNPJ para Nota Fiscal</span>
+                <span class="value" id="res-cnpj">---</span>
+
+                <span class="label">Placa do Veículo</span>
+                <span class="value" id="res-placa" style="color: #007AFF; font-size: 20px;">---</span>
+            </div>
+
+            <button id="btn-modal-action" class="btn-confirm" onclick="closeModal()">OK / PRÓXIMO</button>
+            <button id="btn-cancel" style="background: none; border: none; color: #FF3B30; margin-top: 15px; font-weight: 600; width: 100%;" onclick="closeModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbxTw2OLtgQQ5ibAE4jF_dXdEao581W8a5Mr8vKWt22yie4wU3-rsdMx-MbhMtdBG7Y1/exec";
         let html5QrCode = new Html5Qrcode("reader");
         let isScanning = false;
         let currentCameraId;
         let cameras = [];
 
         function onScanSuccess(decodedText) {
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Vibração dupla de sucesso
-            
-            // Pausa o scanner para o frentista ler o pop-up
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             stopScanner();
-
-            // Mostra o Pop-up
-            document.getElementById('modal-text').innerText = decodedText;
+            
+            // Abre modal em estado de carregamento
             document.getElementById('modal-overlay').style.display = 'flex';
+            document.getElementById('loading-area').style.display = 'block';
+            document.getElementById('data-area').style.display = 'none';
+            document.getElementById('modal-title').innerText = "Buscando Veículo...";
+
+            // Chamada real ao Google Apps Script
+            fetch(`${webAppUrl}?id=${encodeURIComponent(decodedText)}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading-area').style.display = 'none';
+                    document.getElementById('data-area').style.display = 'block';
+
+                    if (data.error) {
+                        document.getElementById('modal-title').innerText = "Não Encontrado";
+                        document.getElementById('res-cliente').innerText = "ID não cadastrado na base.";
+                        document.getElementById('res-cnpj').innerText = "Verifique o cartão.";
+                        document.getElementById('res-placa').innerText = "S/ PLACA";
+                    } else {
+                        document.getElementById('modal-title').innerText = "Veículo Identificado";
+                        document.getElementById('res-cliente').innerText = data.cliente;
+                        document.getElementById('res-cnpj').innerText = data.cnpj;
+                        document.getElementById('res-placa').innerText = data.placa;
+                    }
+                })
+                .catch(error => {
+                    alert("Erro de conexão com o servidor.");
+                    closeModal();
+                });
         }
 
         function closeModal() {
             document.getElementById('modal-overlay').style.display = 'none';
-            // Opcional: Reiniciar a câmera automaticamente após fechar
-            // startScanner(); 
         }
 
         async function toggleScanner() {
-            if (isScanning) {
-                stopScanner();
-            } else {
-                startScanner();
-            }
+            isScanning ? stopScanner() : startScanner();
         }
 
         async function startScanner() {
             try {
                 cameras = await Html5Qrcode.getCameras();
-                if (cameras && cameras.length > 0) {
+                if (cameras.length > 0) {
                     currentCameraId = cameras[cameras.length - 1].id;
-                    await html5QrCode.start(currentCameraId, { fps: 10, qrbox: 250 }, onScanSuccess);
+                    await html5QrCode.start(currentCameraId, { fps: 15, qrbox: 250 }, onScanSuccess);
                     isScanning = true;
                     updateUI();
-                    if (cameras.length > 1) document.getElementById('switch-btn').disabled = false;
                 }
             } catch (err) {
-                alert("Erro: Verifique se está usando HTTPS e deu permissão à câmera.");
+                alert("Erro: Use HTTPS e autorize a câmera.");
             }
         }
 
@@ -182,17 +164,20 @@
             await html5QrCode.stop();
             let idx = cameras.findIndex(c => c.id === currentCameraId);
             currentCameraId = cameras[(idx + 1) % cameras.length].id;
-            await html5QrCode.start(currentCameraId, { fps: 10, qrbox: 250 }, onScanSuccess);
+            await html5QrCode.start(currentCameraId, { fps: 15, qrbox: 250 }, onScanSuccess);
         }
 
         function updateUI() {
             const btn = document.getElementById('main-btn');
+            const sBtn = document.getElementById('switch-btn');
             if (isScanning) {
                 btn.innerText = "PARAR";
                 btn.className = "btn btn-red";
+                sBtn.disabled = cameras.length <= 1;
             } else {
-                btn.innerText = "ESCANEAR";
+                btn.innerText = "ESCANEAR CARTÃO";
                 btn.className = "btn btn-green";
+                sBtn.disabled = true;
             }
         }
     </script>
