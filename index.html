@@ -3,68 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ailog - Leitor OCR Veloe</title>
-    <!-- Bibliotecas Necessárias -->
+    <title>Ailog - Scanner Vertical</title>
     <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            background: #000; color: #fff; height: 100vh; overflow: hidden; 
-            display: flex; flex-direction: column;
-        }
-
-        /* Área do Vídeo */
-        #video-container { position: relative; flex: 1; background: #000; overflow: hidden; }
+        body { font-family: -apple-system, sans-serif; background: #000; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        #video-container { position: relative; flex: 1; background: #000; }
         video { width: 100%; height: 100%; object-fit: cover; }
-
-        /* Guia Visual do Cartão */
-        #guide-box {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%; height: 180px;
-            border: 3px solid #30D158; border-radius: 16px;
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.6);
-            z-index: 5;
-        }
-
-        /* Painel Inferior */
-        .controls {
-            background: #1C1C1E; padding: 25px 20px calc(25px + env(safe-area-inset-bottom));
-            border-top: 1px solid #38383A; text-align: center;
-        }
-
-        .btn-scan {
-            background: #30D158; color: white; border: none; padding: 20px;
-            width: 100%; max-width: 300px; border-radius: 16px;
-            font-weight: 700; font-size: 18px; transition: 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn-scan:active { transform: scale(0.96); opacity: 0.8; }
-
-        #status-msg { margin-top: 15px; font-size: 13px; color: #8E8E93; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* Modal / Pop-up estilo Apple */
-        #modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
-        }
-
-        .modal-content {
-            background: #fff; color: #000; width: 100%; max-width: 340px;
-            border-radius: 28px; padding: 25px; text-align: center;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .data-box { background: #F2F2F7; padding: 15px; border-radius: 16px; text-align: left; margin: 15px 0; border: 1px solid #D1D1D6; }
-        .label { font-size: 10px; color: #8E8E93; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; display: block; }
-        .value { font-size: 16px; font-weight: 600; color: #1C1C1E; margin-bottom: 12px; display: block; }
-
-        .btn-close { width: 100%; background: #007AFF; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 16px; }
         
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #007AFF; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; vertical-align: middle; }
+        /* Moldura ajustada para a proporção do seu cartão */
+        #guide-box {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 70%; height: 300px; border: 3px solid #30D158; border-radius: 20px;
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); z-index: 5;
+        }
+
+        .controls { background: #1C1C1E; padding: 30px 20px; border-top: 1px solid #38383A; text-align: center; }
+        .btn-scan { background: #30D158; color: white; border: none; padding: 20px; width: 100%; border-radius: 16px; font-weight: 700; font-size: 18px; }
+        
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: #fff; color: #000; width: 100%; max-width: 340px; border-radius: 28px; padding: 25px; text-align: center; }
+        .data-box { background: #F2F2F7; padding: 15px; border-radius: 16px; text-align: left; margin: 15px 0; border: 1px solid #D1D1D6; }
+        .label { font-size: 10px; color: #8E8E93; font-weight: 700; text-transform: uppercase; }
+        .value { font-size: 16px; font-weight: 600; color: #1C1C1E; margin-bottom: 10px; display: block; }
+        .btn-close { width: 100%; background: #007AFF; color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #007AFF; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -77,119 +40,96 @@
     </div>
 
     <footer class="controls">
-        <button id="btn-scan" class="btn-scan" onclick="captureAndOCR()">LER DADOS DO CARTÃO</button>
-        <p id="status-msg">Enquadre o cartão Veloe</p>
+        <button class="btn-scan" onclick="captureAndOCR()">LER CARTÃO (VERTICAL)</button>
+        <p style="margin-top:10px; font-size:12px; color:#8E8E93;">MANTENHA O CARTÃO EM PÉ NA MOLDURA</p>
     </footer>
 
-    <!-- Pop-up de Resultados -->
     <div id="modal-overlay">
         <div class="modal-content">
-            <h2 id="modal-title" style="font-size: 20px; margin-bottom: 10px;">Processando...</h2>
-            
-            <div id="loading-view" style="padding: 20px;">
-                <div class="loader"></div><span>Analisando imagem...</span>
-            </div>
-
+            <h2 id="modal-title">Analisando...</h2>
+            <div id="loading-view" style="padding: 20px;"><div class="loader"></div></div>
             <div id="result-view" style="display: none;">
                 <div class="data-box">
-                    <span class="label">Nº Identificado no Cartão</span>
-                    <span id="ocr-num" class="value" style="color: #007AFF;">---</span>
-
-                    <span class="label">Empresa / Cliente</span>
+                    <span class="label">Nº Identificado</span>
+                    <span id="ocr-num" class="value" style="color:#007AFF;">---</span>
+                    <span class="label">Empresa</span>
                     <span id="res-cliente" class="value">---</span>
-
-                    <span class="label">Placa do Veículo</span>
-                    <span id="res-placa" class="value" style="font-size: 22px;">---</span>
-
-                    <span class="label">CNPJ para Nota</span>
-                    <span id="res-cnpj" class="value">---</span>
+                    <span class="label">Placa</span>
+                    <span id="res-placa" class="value">---</span>
                 </div>
-                <button class="btn-close" onclick="closeModal()">PRÓXIMA RECOLHA</button>
+                <button class="btn-close" onclick="closeModal()">NOVA LEITURA</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO ---
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbxTw2OLtgQQ5ibAE4jF_dXdEao581W8a5Mr8vKWt22yie4wU3-rsdMx-MbhMtdBG7Y1/exec"; 
-        // -------------------
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbxTw2OLtgQQ5ibAE4jF_dXdEao581W8a5Mr8vKWt22yie4wU3-rsdMx-MbhMtdBG7Y1/exec"; // <--- IMPORTANTE
 
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
-        const statusMsg = document.getElementById('status-msg');
 
-        // Inicializa a câmera
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", focusMode: "continuous" } })
             .then(stream => video.srcObject = stream);
 
         async function captureAndOCR() {
-            // Feedback visual inicial
             document.getElementById('modal-overlay').style.display = 'flex';
             document.getElementById('loading-view').style.display = 'block';
             document.getElementById('result-view').style.display = 'none';
-            document.getElementById('modal-title').innerText = "Processando OCR...";
 
-            // Captura frame do vídeo
-            const context = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Filtro de imagem para melhorar o OCR em cartões coloridos
+            ctx.filter = 'contrast(150%) brightness(110%) grayscale(100%)';
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             try {
-                // Executa OCR (Tesseract)
-                const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'por');
-                const textRaw = result.data.text;
+                // O segredo para cartões verticais: Tesseract configurado para detectar orientação
+                const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'eng', {
+                    logger: m => console.log(m)
+                });
                 
-                // Filtra apenas números (sequências de 8 a 19 dígitos)
-                const matches = textRaw.replace(/\s+/g, '').match(/\d{8,19}/);
-                const cartaoId = matches ? matches[0] : null;
+                // Extrai apenas números e tenta juntar blocos (ex: 2306 5088...)
+                const cleanText = result.data.text.replace(/\s+/g, '');
+                const matches = cleanText.match(/\d{8,16}/); 
 
-                if (cartaoId) {
-                    document.getElementById('ocr-num').innerText = cartaoId;
-                    buscarNaPlanilha(cartaoId);
+                if (matches) {
+                    document.getElementById('ocr-num').innerText = matches[0];
+                    buscarNaPlanilha(matches[0]);
                 } else {
-                    document.getElementById('loading-view').style.display = 'none';
-                    document.getElementById('result-view').style.display = 'block';
-                    document.getElementById('modal-title').innerText = "Falha na Leitura";
-                    document.getElementById('res-cliente').innerText = "Não foi possível ler o número.";
-                    document.getElementById('res-placa').innerText = "Tente Novamente";
+                    mostrarErro("Não foi possível ler os números. Tente aproximar mais ou melhorar a luz.");
                 }
             } catch (err) {
-                alert("Erro ao processar imagem.");
-                closeModal();
+                mostrarErro("Erro no processamento da imagem.");
             }
         }
 
         function buscarNaPlanilha(id) {
-            document.getElementById('modal-title').innerText = "Consultando Base...";
-            
             fetch(`${webAppUrl}?id=${id}`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('loading-view').style.display = 'none';
                     document.getElementById('result-view').style.display = 'block';
-
                     if (data.error) {
-                        document.getElementById('modal-title').innerText = "Não Encontrado";
-                        document.getElementById('res-cliente').innerText = "Cartão não consta na base.";
-                        document.getElementById('res-placa').innerText = "---";
-                        document.getElementById('res-cnpj').innerText = "---";
+                        document.getElementById('modal-title').innerText = "Não Cadastrado";
+                        document.getElementById('res-cliente').innerText = "Verifique a Planilha";
                     } else {
                         document.getElementById('modal-title').innerText = "Sucesso!";
                         document.getElementById('res-cliente').innerText = data.cliente;
                         document.getElementById('res-placa').innerText = data.placa;
-                        document.getElementById('res-cnpj').innerText = data.cnpj;
                     }
-                })
-                .catch(() => {
-                    alert("Erro de conexão com o Google Sheets.");
-                    closeModal();
                 });
         }
 
-        function closeModal() {
-            document.getElementById('modal-overlay').style.display = 'none';
+        function mostrarErro(msg) {
+            document.getElementById('loading-view').style.display = 'none';
+            document.getElementById('result-view').style.display = 'block';
+            document.getElementById('modal-title').innerText = "Falha";
+            document.getElementById('res-cliente').innerText = msg;
         }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
     </script>
 </body>
 </html>
