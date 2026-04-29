@@ -3,36 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Scanner Ailog Pro</title>
+    <title>Scanner Ailog - Manual</title>
     <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background: #000; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { font-family: sans-serif; background: #000; color: #fff; height: 100vh; overflow: hidden; }
         
-        #video-container { position: relative; flex: 1; background: #000; }
+        #video-container { position: relative; width: 100%; height: 100%; background: #000; }
         video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Moldura de Captura */
+        /* Moldura de enquadramento */
         #guide-box {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 280px; height: 180px; border: 3px solid #30D158; border-radius: 15px;
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); z-index: 5;
+            width: 300px; height: 180px; border: 2px solid rgba(255,255,255,0.5); border-radius: 15px;
+            z-index: 5; pointer-events: none;
+        }
+        #guide-box::after {
+            content: "POSICIONE OS NÚMEROS AQUI"; font-size: 10px; color: #fff;
+            position: absolute; bottom: -25px; width: 100%; text-align: center;
         }
 
-        .ui-panel { background: #1C1C1E; padding: 25px; border-top: 1px solid #38383A; text-align: center; }
-        .btn-main { background: #30D158; color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; font-size: 16px; }
-        
-        /* Overlay de Processamento */
+        /* Botão de Tirar Foto (Círculo centralizado embaixo) */
+        .shutter-button {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 70px; height: 70px; background: white; border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%; z-index: 10; cursor: pointer;
+        }
+        .shutter-button:active { transform: translateX(-50%) scale(0.9); }
+
+        /* Overlay de Carregamento e Resultado */
         #status-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; 
         }
         
-        .card-result { background: white; color: black; width: 85%; border-radius: 20px; padding: 20px; text-align: left; }
-        .label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; }
-        .value { font-size: 18px; font-weight: bold; margin-bottom: 10px; display: block; }
+        .result-card { background: white; color: black; width: 90%; max-width: 350px; border-radius: 20px; padding: 25px; text-align: left; }
+        .label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; display: block; margin-top: 10px; }
+        .value { font-size: 18px; font-weight: bold; color: #1c1c1e; }
+        
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #30D158; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .btn-reset { background: #007AFF; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -43,42 +55,42 @@
         <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
-    <div class="ui-panel">
-        <button class="btn-main" onclick="processarCartao()">ESCANEAR NÚMERO</button>
-        <p style="color: #8E8E93; font-size: 12px; margin-top: 10px;">Aponte para os números do cartão</p>
-    </div>
+    <!-- O BOTÃO DE BATER FOTO -->
+    <div class="shutter-button" onclick="capturarAgora()"></div>
 
     <div id="status-overlay">
         <div id="loader-area" style="text-align: center;">
             <div class="loader"></div>
-            <p>Lendo dados... Mantenha firme</p>
+            <p>Lendo dados do cartão...</p>
         </div>
 
-        <div id="result-area" class="card-result" style="display: none;">
-            <h3 id="res-status" style="margin-bottom: 15px;">---</h3>
-            <span class="label">Número Lido</span>
+        <div id="result-area" class="result-card" style="display: none;">
+            <h2 id="res-status" style="margin-bottom: 15px;">---</h2>
+            <span class="label">Número Identificado</span>
             <span id="res-id" class="value" style="color: #007AFF;">---</span>
             <span class="label">Placa</span>
             <span id="res-placa" class="value">---</span>
             <span class="label">Cliente</span>
             <span id="res-cliente" class="value">---</span>
-            <button class="btn-main" style="background: #007AFF; margin-top: 10px;" onclick="location.reload()">NOVA LEITURA</button>
+            <button class="btn-reset" onclick="resetar()">NOVA LEITURA</button>
         </div>
     </div>
 
     <script>
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbxTw2OLtgQQ5ibAE4jF_dXdEao581W8a5Mr8vKWt22yie4wU3-rsdMx-MbhMtdBG7Y1/exec"; // <--- COLOQUE SEU LINK AQUI
+        // SUBSTITUA PELO SEU LINK DO GOOGLE
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbxTw2OLtgQQ5ibAE4jF_dXdEao581W8a5Mr8vKWt22yie4wU3-rsdMx-MbhMtdBG7Y1/exec"; 
 
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
         const overlay = document.getElementById('status-overlay');
 
-        // Configura câmera com foco otimizado
+        // Inicia câmera
         navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment", focusMode: "continuous", width: { ideal: 1280 }, height: { ideal: 720 } } 
+            video: { facingMode: "environment", focusMode: "continuous" } 
         }).then(stream => video.srcObject = stream);
 
-        async function processarCartao() {
+        async function capturarAgora() {
+            // Mostra o "carregando"
             overlay.style.display = 'flex';
             document.getElementById('loader-area').style.display = 'block';
             document.getElementById('result-area').style.display = 'none';
@@ -87,29 +99,26 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
-            // TRATAMENTO DE IMAGEM: Aumenta contraste para ler letras brancas no laranja
-            ctx.filter = 'contrast(180%) grayscale(100%) brightness(120%)';
+            // PRE-PROCESSAMENTO: Aumenta o contraste para o cartão laranja
+            ctx.filter = 'contrast(200%) grayscale(100%)';
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             try {
-                // Tesseract configurado para ler apenas números (mais rápido e preciso)
-                const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'eng', {
-                    tessedit_char_whitelist: '0123456789'
-                });
-                
-                const idExtraido = result.data.text.replace(/\D/g, '');
+                // Tesseract lê a foto batida
+                const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'eng');
+                const textoLido = result.data.text.replace(/\D/g, ''); // Pega só os números
 
-                if (idExtraido.length >= 8) {
-                    buscarPlanilha(idExtraido);
+                if (textoLido.length >= 8) {
+                    buscarNaPlanilha(textoLido);
                 } else {
-                    falha("Não foi possível isolar os números. Tente aproximar mais.");
+                    exibirErro("Não consegui ler os números. Tente aproximar mais.");
                 }
             } catch (e) {
-                falha("Erro ao processar imagem.");
+                exibirErro("Erro ao processar imagem.");
             }
         }
 
-        function buscarPlanilha(id) {
+        function buscarNaPlanilha(id) {
             fetch(`${webAppUrl}?id=${id}`)
                 .then(r => r.json())
                 .then(data => {
@@ -119,20 +128,25 @@
                     if (data.error) {
                         document.getElementById('res-status').innerText = "Não Cadastrado";
                         document.getElementById('res-id').innerText = id;
+                        document.getElementById('res-placa').innerText = "Verifique a base";
                     } else {
-                        document.getElementById('res-status').innerText = "Veículo Localizado!";
+                        document.getElementById('res-status').innerText = "Localizado!";
                         document.getElementById('res-id').innerText = id;
                         document.getElementById('res-placa').innerText = data.placa;
                         document.getElementById('res-cliente').innerText = data.cliente;
                     }
-                }).catch(e => falha("Erro na rede ou planilha."));
+                }).catch(() => exibirErro("Erro de conexão."));
         }
 
-        function falha(msg) {
+        function exibirErro(msg) {
             document.getElementById('loader-area').style.display = 'none';
             document.getElementById('result-area').style.display = 'block';
             document.getElementById('res-status').innerText = "Falha";
             document.getElementById('res-id').innerText = msg;
+        }
+
+        function resetar() {
+            overlay.style.display = 'none';
         }
     </script>
 </body>
